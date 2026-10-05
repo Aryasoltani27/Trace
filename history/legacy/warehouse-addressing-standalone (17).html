@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>آدرس‌دهی انبار دومان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#16181d; --surface:#23262d; --surface-2:#1c1f26; --surface-hover:#2a2e36;
+    --ink:#f1f5f9; --ink-soft:#94a3b8; --ink-faint:#64748b;
+    --line:#343941; --line-strong:#454b55;
+    --accent:#00c2a8; --accent-hover:#00a892; --accent-ink:#000000; --accent-soft:rgba(0,194,168,.14);
+    --in:#22c55e; --in-soft:rgba(34,197,94,.15);
+    --out:#f43f5e; --out-soft:rgba(244,63,94,.15);
+    --move:#00c2a8; --move-soft:rgba(0,194,168,.15);
+    --warn:#f59e0b; --warn-soft:rgba(245,158,11,.15);
+    --stat-accent:var(--accent);
+    --radius:16px; --radius-sm:10px;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.28);
+    --shadow-md:0 6px 20px rgba(0,0,0,.38);
+    --transition:.15s cubic-bezier(.4,0,.2,1);
+    --sidebar-width:260px;
+    --font-ui:'Vazirmatn',system-ui,-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace;
+    color-scheme: dark;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--paper); color:var(--ink); font-family:var(--font-ui); min-height:100vh; -webkit-font-smoothing:antialiased; }
+  code,.mono,input.mono,.mono-val{ font-family:var(--font-mono); direction:ltr; unicode-bidi:plaintext; }
+  /* gate screens (config/login) */
+  .gate{ display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+  .gate-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:26px 22px; }
+  .gate-card h2{ margin:0 0 6px; font-size:18px; }
+  .gate-card p.sub{ margin:0 0 18px; font-size:13px; color:var(--ink-soft); line-height:1.9; }
+  .gate-card label{ display:block; font-size:12.5px; color:var(--ink-soft); margin:0 0 4px; }
+  .gate-card input{ width:100%; font-family:var(--font-ui); font-size:15px; color:var(--ink); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; outline:none; }
+  .gate-card input:focus{ border-color:var(--accent); }
+  .gate-err{ font-size:13px; color:var(--out); background:var(--out-soft); border-radius:var(--radius-sm); padding:9px 11px; margin-bottom:14px; display:none; }
+  /* sidebar (desktop) */
+  #app-wrap{ display:none; }
+  .sidebar{ display:none; width:var(--sidebar-width); background:var(--surface-2); border-left:1px solid var(--line);
+    flex-direction:column; position:fixed; top:0; right:0; bottom:0; z-index:100; }
+  .sidebar-header{ padding:22px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line); }
+  .logo{ width:36px; height:36px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px; color:var(--accent-ink); flex-shrink:0; }
+  .sidebar-header h1{ font-size:15px; font-weight:700; margin:0; }
+  .sidebar-header span{ font-size:11.5px; color:var(--ink-soft); }
+  .side-nav{ padding:14px 12px; flex:1; }
+  .side-nav .nav-link{ display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:var(--radius-sm); color:var(--ink-soft); cursor:pointer; margin-bottom:4px; font-size:13.5px; transition:.15s; width:100%; background:transparent; border:none; font-family:var(--font-ui); text-align:right; }
+  .side-nav .nav-link:hover{ background:var(--surface); color:var(--ink); }
+  .side-nav .nav-link.active{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  .side-nav .nav-link svg{ width:19px; height:19px; flex-shrink:0; }
+  .sidebar-footer{ padding:14px; border-top:1px solid var(--line); }
+  .user-info{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:var(--radius-sm); background:var(--surface); }
+  .avatar{ width:34px; height:34px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--accent-ink); flex-shrink:0; }
+  main{ flex:1; padding:14px 16px 90px; max-width:1400px; }
+  @media (min-width:769px){
+    .sidebar{ display:flex; }
+    nav.bottomnav{ display:none !important; }
+    main{ margin-right:var(--sidebar-width); padding:28px 32px; }
+    #addr-bulk-bar{ right:calc(var(--sidebar-width) + 32px) !important; left:32px !important; bottom:24px !important; }
+  }
+  #addr-bulk-bar{ position:fixed; left:16px; right:16px; bottom:78px; z-index:50; max-width:1400px; margin:0 auto; }
+  #addr-bulk-bar .card{ box-shadow:0 6px 24px rgba(0,0,0,.45); margin-bottom:0; }
+  .view{ display:none; } .view.active{ display:block; animation:viewIn .18s ease; }
+  @keyframes viewIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes dataPulse{ from{ opacity:.35; } to{ opacity:.75; } }
+  .loading-data .stat-info .value, .loading-data #home-recent, .loading-data #hist-list, .loading-data #home-recent-cards, .loading-data #hist-list-cards{
+    animation:dataPulse 1s ease-in-out infinite alternate;
+  }
+  h2.section-title{ font-size:15px; font-weight:700; margin:18px 0 10px; }
+  h2.section-title:first-child{ margin-top:2px; }
+  .page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .page-header h2{ margin:0; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:var(--sp-4); margin-bottom:var(--sp-3); box-shadow:var(--shadow-sm); }
+  .empty-state{ text-align:center; padding:34px 18px; color:var(--ink-soft); }
+  .empty-state::before{ content:''; display:block; width:40px; height:40px; margin:0 auto var(--sp-3); background-color:var(--ink-faint);
+    -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 8 12 3 3 8l9 5 9-5z'/%3E%3Cpath d='M3 8v8l9 5 9-5V8'/%3E%3Cpath d='M12 13v8'/%3E%3C/svg%3E");
+    mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 8 12 3 3 8l9 5 9-5z'/%3E%3Cpath d='M3 8v8l9 5 9-5V8'/%3E%3Cpath d='M12 13v8'/%3E%3C/svg%3E");
+    mask-repeat:no-repeat; -webkit-mask-repeat:no-repeat; mask-size:contain; -webkit-mask-size:contain; mask-position:center; -webkit-mask-position:center; }
+  .empty-state p{ margin:0 0 12px; font-size:13.5px; line-height:1.9; }
+  label{ display:block; font-size:12.5px; color:var(--ink-soft); margin:0 0 4px; }
+  input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], select{
+    width:100%; font-family:var(--font-ui); font-size:15px; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:10px 12px; margin-bottom:12px; outline:none;
+  }
+  input.mono{ font-size:16px; }
+  input:focus, select:focus{ border-color:var(--accent); }
+  .field-row{ display:flex; gap:10px; } .field-row > div{ flex:1; }
+  .hint{ font-size:11.5px; color:var(--ink-faint); margin:-8px 0 12px; }
+  button{ font-family:var(--font-ui); cursor:pointer; border:none; transition:transform var(--transition), background var(--transition), border-color var(--transition), opacity var(--transition); }
+  button:active:not(:disabled){ transform:scale(.97); }
+  button:disabled{ opacity:.55; cursor:not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .nav-link:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+  input, select{ transition:border-color var(--transition); }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:var(--radius-sm); padding:11px 16px; font-size:14.5px; font-weight:600; width:100%; transition:.15s; }
+  .btn-primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn-primary:hover{ background:var(--accent-hover); }
+  .btn-outline{ background:transparent; color:var(--ink); border:1px solid var(--line-strong); }
+  .btn-in{ background:var(--in-soft); color:var(--in); }
+  .btn-out{ background:var(--out-soft); color:var(--out); }
+  .btn-move{ background:var(--move-soft); color:var(--move); }
+  .btn-sm{ width:auto; padding:7px 12px; font-size:12.5px; font-weight:600; border-radius:var(--radius-sm); }
+  .type-tabs{ display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; }
+  .type-tabs button{ flex:1; white-space:nowrap; padding:9px 12px; border-radius:var(--radius-sm); border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-size:13px; font-weight:600; }
+  .type-tabs button.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .status-msg{ font-size:13px; padding:10px 12px; border-radius:var(--radius-sm); margin-bottom:12px; display:none; }
+  .status-msg.ok{ display:block; background:var(--in-soft); color:var(--in); }
+  .status-msg.err{ display:block; background:var(--out-soft); color:var(--out); }
+  .stock-row{ display:flex; align-items:flex-start; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); gap:10px; }
+  .stock-row:last-child{ border-bottom:none; }
+  .stock-row .addr{ font-family:var(--font-mono); font-size:14px; font-weight:600; direction:ltr; }
+  .stock-row .name{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .stock-row .qty{ font-family:var(--font-mono); font-size:16px; font-weight:700; direction:ltr; min-width:44px; text-align:left; padding-top:1px; }
+  .row-actions{ display:flex; gap:6px; margin-top:6px; }
+  .group-header{ font-size:13px; font-weight:700; color:var(--ink-soft); margin:16px 0 8px; display:flex; justify-content:space-between; align-items:center; }
+  .group-header .addr{ font-size:14.5px; font-weight:700; color:var(--accent); background:var(--accent-soft); padding:4px 11px; border-radius:8px; }
+  .group-header:first-child{ margin-top:0; }
+  .search-box{ display:flex; gap:8px; margin-bottom:4px; position:relative; }
+  .search-box input{ margin-bottom:0; flex:1; }
+  .scan-btn{ width:48px; height:44px; flex-shrink:0; border-radius:var(--radius-sm); background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-size:19px; margin-bottom:12px; }
+  #scanner-wrap{ display:none; margin-bottom:14px; } #scanner-wrap.active{ display:block; }
+  #scanner-el{ border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); background:#000; min-height:260px; }
+  .scan-status{ font-size:12.5px; color:var(--ink-soft); text-align:center; margin-top:8px; }
+  /* live search suggestions */
+  .suggest-box{ display:none; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); margin:-6px 0 12px; max-height:260px; overflow-y:auto; }
+  .suggest-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .suggest-item:last-child{ border-bottom:none; }
+  .suggest-item:hover{ background:var(--surface-hover); }
+  .suggest-name{ font-size:12.5px; color:var(--ink-soft); flex:1; margin:0 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .suggest-badge{ font-size:10.5px; color:var(--out); background:var(--out-soft); padding:2px 7px; border-radius:20px; flex-shrink:0; white-space:nowrap; }
+  .suggest-badge.ok{ color:var(--in); background:var(--in-soft); font-family:var(--font-mono); direction:ltr; }
+  /* tables */
+  .table-scroll{ width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; display:none; }
+  .tx-cards{ display:block; max-height:60vh; overflow-y:auto; }
+  @media (min-width:769px){ .table-scroll{ display:block; } .tx-cards{ display:none; } }
+  .tx-card{ background:var(--surface-2); border-radius:var(--radius-sm); padding:11px 13px; margin-bottom:8px; }
+  .tx-card:last-child{ margin-bottom:0; }
+  .tx-card-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:5px; }
+  .tx-card-mid{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:7px; }
+  .tx-card-name{ font-size:12.5px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tx-card-qty{ font-family:var(--font-mono); direction:ltr; font-weight:700; font-size:14px; flex-shrink:0; }
+  .tx-card-bottom{ display:flex; justify-content:space-between; gap:8px; font-size:11px; color:var(--ink-faint); }
+  table{ width:100%; border-collapse:collapse; min-width:560px; }
+  th{ text-align:right; padding:10px 12px; font-size:12px; color:var(--ink-soft); font-weight:500; border-bottom:1px solid var(--line); white-space:nowrap; position:sticky; top:0; background:var(--surface); z-index:1; }
+  td{ padding:10px 12px; font-size:13.5px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tr:last-child td{ border-bottom:none; }
+  tr:hover td{ background:rgba(255,255,255,.02); }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; }
+  .badge.in{ background:var(--in-soft); color:var(--in); }
+  .badge.out{ background:var(--out-soft); color:var(--out); }
+  .badge.edit{ background:var(--warn-soft); color:var(--warn); }
+  .badge.move{ background:var(--move-soft); color:var(--move); }
+  .filter-row{ display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; }
+  .filter-row button{ padding:6px 14px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-size:12px; font-weight:600; white-space:nowrap; }
+  .filter-row button.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  /* mobile bottom nav */
+  nav.bottomnav{ position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--line); display:flex; z-index:10; padding-bottom:env(safe-area-inset-bottom); }
+  nav.bottomnav button{ flex:1; background:transparent; padding:9px 2px 8px; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--ink-faint); }
+  nav.bottomnav button .ic{ width:20px; height:20px; } nav.bottomnav button .lb{ font-size:10.5px; font-weight:600; }
+  nav.bottomnav button.active{ color:var(--accent); }
+  .banner{ background:var(--surface); border:1px solid var(--out); color:var(--out); border-radius:var(--radius); padding:14px; margin-bottom:14px; font-size:13.5px; line-height:1.8; }
+  .top-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px; }
+  a.link-btn{ font-size:12.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; }
+  ::placeholder{ color: var(--ink-faint); }
+  /* stat cards */
+  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; display:flex; align-items:flex-start; gap:12px; }
+  .stat-icon-box{ width:42px; height:42px; border-radius:12px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; color:var(--accent); flex-shrink:0; }
+  .stat-icon-box svg{ width:21px; height:21px; }
+  .stat-info h3{ font-size:11.5px; color:var(--ink-soft); margin:0 0 5px; font-weight:500; }
+  .stat-info .value{ font-family:var(--font-mono); font-size:19px; font-weight:700; direction:ltr; }
+  @media (max-width:420px){
+    .stats{ gap:8px; }
+    .stat-card{ padding:11px 8px; flex-direction:column; align-items:center; text-align:center; gap:6px; }
+    .stat-icon-box{ width:34px; height:34px; }
+    .stat-info h3{ font-size:10.5px; }
+    .stat-info .value{ font-size:16px; }
+  }
+  /* excel import panel */
+  .mode-tabs{ display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; }
+  .mode-tabs button{ flex:1; white-space:nowrap; padding:9px 10px; border-radius:var(--radius-sm); border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-size:12.5px; font-weight:600; line-height:1.4; }
+  .mode-tabs button.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .upload-box{ border:2px dashed var(--line-strong); border-radius:var(--radius); padding:20px 14px; text-align:center; margin-bottom:12px; }
+  .upload-box p{ font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; line-height:1.8; }
+  .upload-box input[type=file]{ width:100%; font-size:13px; color:var(--ink); }
+  .tpl-link{ display:block; text-align:center; font-size:12.5px; color:var(--accent); text-decoration:underline; margin-bottom:14px; }
+  .excel-row{ border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:8px; }
+  .excel-row.status-ok{ border-color:var(--in); }
+  .excel-row.status-warn{ border-color:var(--out); background:var(--out-soft); }
+  .excel-row.status-excluded{ opacity:.5; }
+  .er-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; font-size:13.5px; }
+  .er-code{ font-family:var(--font-mono); font-weight:600; direction:ltr; }
+  .er-name{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .er-qty{ font-family:var(--font-mono); font-weight:700; direction:ltr; }
+  .er-note{ font-size:11.5px; margin-top:6px; color:var(--out); }
+  .er-note.ok{ color:var(--in); }
+  .er-row2{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .er-row2 select{ margin-bottom:0; flex:1; font-size:13px; padding:7px 8px; }
+  .er-row2 label.chk{ display:flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-soft); margin:0; white-space:nowrap; }
+  .excel-summary{ font-size:13px; color:var(--ink-soft); margin-bottom:10px; padding:10px 12px; background:var(--surface-2); border-radius:var(--radius-sm); }
+  .excel-progress{ font-size:12.5px; color:var(--ink-soft); text-align:center; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- CONFIG GATE -->
+<div class="gate" id="config-gate">
+  <div class="gate-card">
+    <h2>اتصال به پایگاه داده</h2>
+    <p class="sub">این کار فقط یک‌بار روی هر دستگاه/مرورگر لازمه. آدرس و کلید پروژه Supabase‌تون رو وارد کنید.</p>
+    <div class="gate-err" id="config-err"></div>
+    <label>Project URL</label>
+    <input type="text" id="cfg-url" class="mono" placeholder="https://xxxxxxxx.supabase.co" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label>Publishable / anon key</label>
+    <input type="text" id="cfg-key" class="mono" placeholder="sb_publishable_... یا eyJ..." autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button class="btn btn-primary" id="cfg-save-btn">ذخیره و ادامه</button>
+  </div>
+</div>
+
+<!-- LOGIN GATE -->
+<div class="gate" id="login-gate" style="display:none;">
+  <div class="gate-card">
+    <h2>ورود</h2>
+    <p class="sub">با ایمیل و رمزی که برای این سیستم ساختید وارد شوید.</p>
+    <div class="gate-err" id="login-err"></div>
+    <label>ایمیل</label>
+    <input type="email" id="login-email" placeholder="you@example.com" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username">
+    <label>رمز عبور</label>
+    <input type="password" id="login-pass" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="current-password">
+    <button class="btn btn-primary" id="login-btn">ورود</button>
+    <div style="text-align:center; margin-top:14px;"><span class="link-btn" id="change-cfg-link">تغییر آدرس پایگاه داده</span></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-wrap">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">د</div>
+      <div><h1>آدرس‌دهی انبار دومان</h1><span>سیستم مدیریت موجودی</span></div>
+    </div>
+    <nav class="side-nav">
+      <button type="button" class="nav-link active" data-view="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        خانه
+      </button>
+      <button type="button" class="nav-link" data-view="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        جستجوی محصول
+      </button>
+      <button type="button" class="nav-link" data-view="record">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        ثبت تراکنش
+      </button>
+      <button type="button" class="nav-link" data-view="addresses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        آدرس‌ها
+      </button>
+      <button type="button" class="nav-link" data-view="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        تاریخچه تراکنش‌ها
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" id="user-avatar">؟</div>
+        <div>
+          <div style="font-size:12.5px;font-weight:600;word-break:break-all;" id="user-email-display">—</div>
+          <div style="font-size:11px;color:var(--ink-soft)">مدیر انبار</div>
+        </div>
+      </div>
+      <span class="link-btn signout-link" style="display:block; text-align:center; margin-top:10px;">خروج از حساب</span>
+    </div>
+  </aside>
+
+  <main>
+    <div id="db-banner" class="banner" style="display:none;">
+      اتصال به فضای ذخیره‌سازی برقرار نشد. اگر این صفحه را به‌صورت پیش‌نمایش می‌بینید، آن را از دکمه انتشار باز کنید و دوباره امتحان کنید.
+    </div>
+
+    <!-- HOME -->
+    <section class="view active" data-view="home">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.2"></rect><rect x="14" y="3" width="7" height="7" rx="1.2"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.2"></rect><path d="M14 14h3v3h-3zM19 14v3M14 19h3M19 19h2v2h-2z"></path>
+            </svg>
+          </div>
+          <div class="stat-info"><h3>کد کالای فعال</h3><div class="value" id="stat-skus">0</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="9" r="2.4"></circle>
+            </svg>
+          </div>
+          <div class="stat-info"><h3>آدرس فعال</h3><div class="value" id="stat-addrs">0</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path>
+            </svg>
+          </div>
+          <div class="stat-info"><h3>جمع تعداد</h3><div class="value" id="stat-units">0</div></div>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <h2 class="section-title">آخرین تراکنش‌ها</h2>
+        <div class="top-actions" style="margin:0;">
+          <span class="link-btn signout-link">خروج از حساب</span>
+          <span class="link-btn" id="export-csv-btn">خروجی Excel</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>کد کالا</th><th>نام محصول</th><th>نوع</th><th>تعداد</th><th>آدرس</th><th>تاریخ</th></tr></thead>
+            <tbody id="home-recent"></tbody>
+          </table>
+        </div>
+        <div class="tx-cards" id="home-recent-cards"></div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="view" data-view="search">
+      <h2 class="section-title">جستجوی محصول</h2>
+      <div class="search-box">
+        <input type="text" id="search-input" class="mono" inputmode="numeric" placeholder="کد کالا را وارد یا اسکن کنید" autocomplete="off">
+        <button class="scan-btn" id="open-scan-btn" title="اسکن بارکد" aria-label="اسکن بارکد با دوربین">▤</button>
+      </div>
+      <div id="search-suggestions" class="suggest-box"></div>
+      <div id="scanner-wrap">
+        <div id="scanner-el"></div>
+        <div class="scan-status" id="scan-status">در حال آماده‌سازی دوربین…</div>
+        <div style="margin-top:8px;"><button class="btn btn-outline btn-sm" id="close-scan-btn">بستن دوربین</button></div>
+      </div>
+      <div id="search-result"></div>
+    </section>
+
+    <!-- RECORD -->
+    <section class="view" data-view="record">
+      <h2 class="section-title">ثبت تراکنش</h2>
+      <div class="type-tabs" id="tx-type-tabs">
+        <button data-type="IN" class="active">ورود به انبار</button>
+        <button data-type="OUT">خروج / شارژ</button>
+        <button data-type="MOVE">جابجایی داخلی</button>
+        <button data-type="ADJUST">اصلاح موجودی</button>
+        <button data-type="EXCEL">اکسل</button>
+      </div>
+      <div class="status-msg" id="tx-status"></div>
+      <div class="card"><form id="tx-form"></form></div>
+    </section>
+
+    <!-- ADDRESSES -->
+    <section class="view" data-view="addresses">
+      <h2 class="section-title">مرور بر اساس آدرس</h2>
+      <input type="text" id="addr-filter" placeholder="فیلتر بر اساس آدرس یا کد کالا">
+      <div id="addr-list" class="card"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" data-view="history">
+      <h2 class="section-title">تاریخچه تراکنش‌ها</h2>
+      <input type="text" id="hist-filter" placeholder="فیلتر بر اساس کد کالا یا آدرس">
+      <div class="field-row">
+        <div><label>از تاریخ (شمسی)</label><input type="text" id="hist-from-date" class="mono" placeholder="1405/06/01" inputmode="numeric"></div>
+        <div><label>تا تاریخ (شمسی)</label><input type="text" id="hist-to-date" class="mono" placeholder="1405/06/30" inputmode="numeric"></div>
+      </div>
+      <div class="hint" style="margin-top:-8px;">فیلتر تاریخ فقط روی تراکنش‌هایی که تا الان بارگذاری شدن اعمال می‌شه — برای تاریخ‌های قدیمی‌تر، اول «بارگذاری تراکنش‌های قدیمی‌تر» رو بزنید.</div>
+      <div class="filter-row" id="hist-type-filter">
+        <button data-type="ALL" class="active">همه</button>
+        <button data-type="IN">ورود</button>
+        <button data-type="OUT">خروج</button>
+        <button data-type="MOVE">جابجایی</button>
+        <button data-type="ADJUST">اصلاح</button>
+      </div>
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>کد کالا</th><th>نام محصول</th><th>نوع تراکنش</th><th>تعداد</th><th>آدرس</th><th>تاریخ و زمان</th></tr></thead>
+            <tbody id="hist-list"></tbody>
+          </table>
+        </div>
+        <div class="tx-cards" id="hist-list-cards"></div>
+      </div>
+      <div id="hist-load-more" style="margin-top:10px;"></div>
+    </section>
+  </main>
+
+  <div id="addr-bulk-bar" style="display:none;"></div>
+
+  <nav class="bottomnav">
+    <button class="nav-link active" data-view="home">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="lb">خانه</span>
+    </button>
+    <button class="nav-link" data-view="search">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span class="lb">جستجو</span>
+    </button>
+    <button class="nav-link" data-view="record">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="lb">ثبت</span>
+    </button>
+    <button class="nav-link" data-view="addresses">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="lb">آدرس‌ها</span>
+    </button>
+    <button class="nav-link" data-view="history">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="lb">تاریخچه</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+function enDigits(str){ const fa='۰۱۲۳۴۵۶۷۸۹', ar='٠١٢٣٤٥٦٧٨٩'; return String(str).replace(/[۰-۹٠-٩]/g, ch=>{ let i=fa.indexOf(ch); if(i>-1) return String(i); i=ar.indexOf(ch); if(i>-1) return String(i); return ch; }); }
+function fmtNum(n){ return Math.round(n||0).toLocaleString('en-US'); }
+function fmtDateTime(ts){ try{ return new Date(ts).toLocaleString('fa-IR',{dateStyle:'medium',timeStyle:'short',numberingSystem:'latn'}); }catch(e){ return ''; } }
+function jalaliToGregorian(jy, jm, jd){
+  jy=parseInt(jy,10)+1595;
+  let days=-355668+(365*jy)+(Math.floor(jy/33)*8)+Math.floor(((jy%33)+3)/4)+parseInt(jd,10)+((jm<7)?(jm-1)*31:((jm-7)*30)+186);
+  let gy=400*Math.floor(days/146097); days%=146097;
+  if(days>36524){ gy+=100*Math.floor(--days/36524); days%=36524; if(days>=365) days++; }
+  gy+=4*Math.floor(days/1461); days%=1461;
+  if(days>365){ gy+=Math.floor((days-1)/365); days=(days-1)%365; }
+  let gd=days+1;
+  const sal_a=[0,31,((gy%4===0&&gy%100!==0)||(gy%400===0))?29:28,31,30,31,30,31,31,30,31,30,31];
+  let gm; for(gm=0; gm<13; gm++){ const v=sal_a[gm]; if(gd<=v) break; gd-=v; }
+  return {gy, gm, gd};
+}
+function parseJalaliDateInput(str, endOfDay){
+  const s=enDigits(String(str||'').trim());
+  const parts=s.split(/[\/\-]/).map(p=> parseInt(p,10));
+  if(parts.length!==3 || parts.some(isNaN)) return null;
+  const [jy,jm,jd]=parts;
+  if(jm<1||jm>12||jd<1||jd>31) return null;
+  try{
+    const {gy,gm,gd}=jalaliToGregorian(jy,jm,jd);
+    return new Date(gy, gm-1, gd, endOfDay?23:0, endOfDay?59:0, endOfDay?59:0).getTime();
+  }catch(e){ return null; }
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- state ---------- */
+let sb=null;
+let stockMap={};      // id -> {id,code,name,address,qty,updated_at}
+let productMap={};    // code -> {code,name}
+let logEntries=[];    // [{id,ts,type,code,name,from_address,to_address,qty,note}]
+let currentView='home';
+let txType='IN';
+let scanning=false, html5Qr=null;
+let prefill=null;
+let currentUserEmail='';
+
+/* ---------- config + auth gate ---------- */
+function loadConfig(){ try{ return JSON.parse(localStorage.getItem('wh_supabase_config')||'null'); }catch(e){ return null; } }
+function saveConfig(cfg){ localStorage.setItem('wh_supabase_config', JSON.stringify(cfg)); }
+
+async function boot(){
+  const cfg=loadConfig();
+  if(!cfg || !cfg.url || !cfg.key){ showGate('config'); return; }
+  initClient(cfg);
+}
+function initClient(cfg){
+  try{
+    sb = window.supabase.createClient(cfg.url, cfg.key);
+  }catch(e){
+    showGate('config'); document.getElementById('config-err').textContent='آدرس یا کلید معتبر نیست.'; document.getElementById('config-err').style.display='block';
+    return;
+  }
+  sb.auth.getSession().then(({data})=>{
+    if(data && data.session){ currentUserEmail=data.session.user.email||''; afterLogin(); } else { showGate('login'); }
+  });
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_IN' && session){ currentUserEmail=session.user.email||''; afterLogin(); }
+    if(event==='SIGNED_OUT'){ showGate('login'); }
+  });
+}
+function showGate(which){
+  document.getElementById('config-gate').style.display = which==='config' ? 'flex' : 'none';
+  document.getElementById('login-gate').style.display = which==='login' ? 'flex' : 'none';
+  document.getElementById('app-wrap').style.display = 'none';
+}
+function afterLogin(){
+  document.getElementById('config-gate').style.display='none';
+  document.getElementById('login-gate').style.display='none';
+  document.getElementById('app-wrap').style.display='block';
+  document.body.classList.add('loading-data');
+  const emailNode=document.getElementById('user-email-display');
+  const avatarNode=document.getElementById('user-avatar');
+  if(emailNode) emailNode.textContent=currentUserEmail||'—';
+  if(avatarNode) avatarNode.textContent=currentUserEmail ? currentUserEmail[0].toUpperCase() : '؟';
+  subscribeAll();
+}
+
+document.getElementById('cfg-save-btn').addEventListener('click', ()=>{
+  let url=(document.getElementById('cfg-url').value||'').trim().replace(/\/+$/,'');
+  const key=(document.getElementById('cfg-key').value||'').trim();
+  const errBox=document.getElementById('config-err');
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){
+    errBox.textContent='آدرس باید دقیقاً به این شکل باشد، بدون فاصله یا متن اضافه: https://xxxxxxxx.supabase.co (چیزی بعد از .co نباید بیاد)';
+    errBox.style.display='block'; return;
+  }
+  if(!key || key.length<20){
+    errBox.textContent='کلید (Publishable / anon key) خالی یا خیلی کوتاه است.'; errBox.style.display='block'; return;
+  }
+  errBox.style.display='none';
+  saveConfig({url,key});
+  initClient({url,key});
+  showGate('login');
+});
+document.getElementById('change-cfg-link').addEventListener('click', ()=>{
+  const cfg=loadConfig()||{};
+  document.getElementById('cfg-url').value=cfg.url||'';
+  document.getElementById('cfg-key').value=cfg.key||'';
+  showGate('config');
+});
+document.getElementById('login-btn').addEventListener('click', async ()=>{
+  const email=(document.getElementById('login-email').value||'').trim();
+  const password=document.getElementById('login-pass').value||'';
+  const errBox=document.getElementById('login-err');
+  errBox.style.display='none';
+  if(!sb){ errBox.textContent='ابتدا اتصال به پایگاه داده را کامل کنید.'; errBox.style.display='block'; return; }
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){ errBox.textContent='ورود ناموفق بود: '+(error.message||'خطای نامشخص')+' (کد: '+(error.status||error.code||'?')+')'; errBox.style.display='block'; }
+});
+document.querySelectorAll('.signout-link').forEach(el=> el.addEventListener('click', async ()=>{ if(sb) await sb.auth.signOut(); }));
+
+/* ---------- data load + realtime ---------- */
+async function fetchAllRows(table){
+  let all=[], from=0; const PAGE=1000;
+  while(true){
+    const {data,error}=await sb.from(table).select('*').range(from, from+PAGE-1);
+    if(error) throw error;
+    all=all.concat(data||[]);
+    if(!data || data.length<PAGE) break;
+    from+=PAGE;
+  }
+  return all;
+}
+let logsLimit=300;
+let logsHasMore=true;
+async function loadAll(){
+  if(!sb) return;
+  try{
+    const [s,p,l]=await Promise.all([
+      fetchAllRows('stock'),
+      fetchAllRows('products'),
+      sb.from('logs').select('*').order('ts',{ascending:false}).limit(logsLimit)
+    ]);
+    stockMap={}; s.forEach(r=> stockMap[r.id]=r);
+    productMap={}; p.forEach(r=> productMap[r.code]=r);
+    logEntries=l.data||[];
+    logsHasMore=(l.data||[]).length>=logsLimit;
+    document.body.classList.remove('loading-data');
+    renderAll();
+  }catch(e){ console.error('loadAll failed', e); }
+}
+function subscribeAll(){
+  loadAll();
+  sb.channel('wh-changes')
+    .on('postgres_changes', {event:'*', schema:'public', table:'stock'}, loadAll)
+    .on('postgres_changes', {event:'*', schema:'public', table:'products'}, loadAll)
+    .on('postgres_changes', {event:'*', schema:'public', table:'logs'}, loadAll)
+    .subscribe();
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.nav-link').forEach(btn=> btn.addEventListener('click', ()=> switchView(btn.dataset.view)));
+function switchView(name){
+  currentView=name;
+  document.querySelectorAll('.view').forEach(v=> v.classList.toggle('active', v.dataset.view===name));
+  document.querySelectorAll('.nav-link').forEach(b=> b.classList.toggle('active', b.dataset.view===name));
+  if(name!=='search' && scanning) stopScanner();
+  if(name!=='addresses'){ const bar=document.getElementById('addr-bulk-bar'); if(bar) bar.style.display='none'; }
+  window.scrollTo(0,0);
+  renderAll();
+}
+
+/* ---------- render dispatch ---------- */
+function renderAll(){
+  renderStats(); renderHome();
+  if(currentView==='search') renderSearchResult();
+  if(currentView==='addresses') renderAddresses();
+  if(currentView==='history') renderHistory();
+}
+function renderStats(){
+  const skus=new Set(), addrs=new Set(); let units=0;
+  Object.values(stockMap).forEach(s=>{ skus.add(s.code); addrs.add(s.address); units+=(s.qty||0); });
+  document.getElementById('stat-skus').textContent=fmtNum(skus.size);
+  document.getElementById('stat-addrs').textContent=fmtNum(addrs.size);
+  document.getElementById('stat-units').textContent=fmtNum(units);
+}
+
+/* ---------- HOME ---------- */
+document.getElementById('export-csv-btn').addEventListener('click', exportCsv);
+function renderHome(){
+  const box=document.getElementById('home-recent');
+  const cardBox=document.getElementById('home-recent-cards');
+  const entries=logEntries.slice(0,6);
+  if(Object.keys(stockMap).length===0 && entries.length===0){
+    const emptyHtml=`<div class="empty-state"><p>هنوز هیچ کالایی در سیستم آدرس‌دهی ثبت نشده. از تب «ثبت» شروع کنید تا اولین ورودی انبار را ثبت کنید.</p><button class="btn btn-primary" onclick="switchView('record')" style="width:auto; padding:9px 20px;">ثبت اولین تراکنش</button></div>`;
+    box.innerHTML=`<tr><td colspan="6">${emptyHtml}</td></tr>`;
+    if(cardBox) cardBox.innerHTML=emptyHtml;
+    return;
+  }
+  if(entries.length===0){
+    const emptyHtml=`<div class="empty-state"><p>تراکنشی هنوز ثبت نشده.</p></div>`;
+    box.innerHTML=`<tr><td colspan="6">${emptyHtml}</td></tr>`;
+    if(cardBox) cardBox.innerHTML=emptyHtml;
+    return;
+  }
+  box.innerHTML=entries.map(txRowHtml).join('');
+  if(cardBox) cardBox.innerHTML=entries.map(txCardHtml).join('');
+}
+function exportCsv(){
+  const rows=[['کد کالا','نام کالا','آدرس','تعداد']];
+  Object.values(stockMap).sort((a,b)=> a.code.localeCompare(b.code)).forEach(s=>{
+    rows.push([s.code, s.name||(productMap[s.code]&&productMap[s.code].name)||'', s.address, s.qty]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:32},{wch:20},{wch:9}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'موجودی انبار');
+  XLSX.writeFile(wb, 'موجودی-انبار.xlsx');
+}
+
+/* ---------- SEARCH ---------- */
+const searchInput=document.getElementById('search-input');
+searchInput.addEventListener('input', ()=>{
+  searchInput.value=enDigits(searchInput.value);
+  renderSearchResult();
+  renderSearchSuggestions(searchInput.value.trim());
+});
+searchInput.addEventListener('focus', ()=>{ if(searchInput.value.trim()) renderSearchSuggestions(searchInput.value.trim()); });
+searchInput.addEventListener('blur', ()=> setTimeout(()=>{ const b=document.getElementById('search-suggestions'); if(b) b.style.display='none'; }, 150));
+document.getElementById('open-scan-btn').addEventListener('click', ()=>{ if(scanning) stopScanner(); else startScanner(); });
+document.getElementById('close-scan-btn').addEventListener('click', stopScanner);
+function renderSearchSuggestions(query){
+  const box=document.getElementById('search-suggestions');
+  if(!query || query.length<2){ box.style.display='none'; box.innerHTML=''; return; }
+  const allCodes=new Set([...Object.keys(productMap), ...Object.values(stockMap).map(s=>s.code)]);
+  let matches=[...allCodes].filter(c=> c.includes(query));
+  if(matches.length===0 || (matches.length===1 && matches[0]===query)){ box.style.display='none'; box.innerHTML=''; return; }
+  matches.sort((a,b)=>{
+    const as=a.startsWith(query)?0:1, bs=b.startsWith(query)?0:1;
+    if(as!==bs) return as-bs;
+    return a.localeCompare(b);
+  });
+  matches=matches.slice(0,8);
+  box.innerHTML=matches.map(c=>{
+    const name=(productMap[c]&&productMap[c].name)||'';
+    const stockRows=Object.values(stockMap).filter(s=> s.code===c);
+    let stockBadge;
+    if(stockRows.length===0){
+      stockBadge='<span class="suggest-badge">بدون موجودی</span>';
+    } else if(stockRows.length===1){
+      stockBadge=`<span class="suggest-badge ok">${esc(stockRows[0].address)} · ${fmtNum(stockRows[0].qty)}</span>`;
+    } else {
+      const totalQty=stockRows.reduce((s,r)=> s+(r.qty||0),0);
+      const shown=stockRows.slice(0,2).map(r=>r.address).join('، ')+(stockRows.length>2?(' +'+fmtNum(stockRows.length-2)):'');
+      stockBadge=`<span class="suggest-badge ok">${esc(shown)} · ${fmtNum(totalQty)}</span>`;
+    }
+    return `<div class="suggest-item" onmousedown="selectSuggestion('${c}')">
+      <span class="mono-val">${esc(c)}</span>
+      <span class="suggest-name">${esc(name||'بدون نام')}</span>
+      ${stockBadge}
+    </div>`;
+  }).join('');
+  box.style.display='block';
+}
+function selectSuggestion(code){
+  searchInput.value=code;
+  document.getElementById('search-suggestions').style.display='none';
+  renderSearchResult();
+}
+function renderSearchResult(){
+  const code=enDigits(searchInput.value.trim());
+  const box=document.getElementById('search-result');
+  if(!code){ box.innerHTML=''; return; }
+  const rows=Object.values(stockMap).filter(s=> s.code===code);
+  const name=(productMap[code]&&productMap[code].name)||(rows[0]&&rows[0].name)||'';
+  let html=`<div class="card"><div class="group-header"><span class="mono-val">${esc(code)}</span><span>${esc(name)||'نام ثبت نشده'}</span></div>`;
+  if(rows.length===0){
+    html+=`<p style="font-size:13px; color:var(--ink-soft); margin:6px 0 12px;">این کد کالا در هیچ آدرسی موجودی ثبت‌شده ندارد.</p>`;
+  } else {
+    rows.sort((a,b)=> a.address.localeCompare(b.address));
+    rows.forEach(s=>{
+      html+=`<div class="stock-row"><div><div class="addr">${esc(s.address)}</div></div><div class="qty">${fmtNum(s.qty)}</div></div>
+      <div class="row-actions">
+        <button class="btn btn-sm btn-out" onclick="quickPrefill('OUT','${esc(code)}','${esc(s.address)}')">خروج/شارژ</button>
+        <button class="btn btn-sm btn-move" onclick="quickPrefill('MOVE','${esc(code)}','${esc(s.address)}')">جابجایی</button>
+        <button class="btn btn-sm btn-outline" onclick="quickPrefill('ADJUST','${esc(code)}','${esc(s.address)}')">اصلاح</button>
+      </div>`;
+    });
+  }
+  html+=`<div style="margin-top:12px;"><button class="btn btn-in" onclick="quickPrefill('IN','${esc(code)}','')">ثبت ورود جدید برای این کد</button></div></div>`;
+  box.innerHTML=html;
+}
+function quickPrefill(type, code, address){
+  prefill={code, address}; txType=type; switchView('record');
+  document.querySelectorAll('#tx-type-tabs button').forEach(b=> b.classList.toggle('active', b.dataset.type===type));
+  renderRecordForm();
+}
+
+/* ---------- SCANNER ---------- */
+function startScanner(){
+  const wrap=document.getElementById('scanner-wrap'); const statusEl=document.getElementById('scan-status');
+  wrap.classList.add('active'); scanning=true; document.getElementById('open-scan-btn').textContent='✕';
+  if(typeof Html5Qrcode==='undefined'){ statusEl.textContent='کتابخانه اسکن بارگذاری نشد — کد را دستی وارد کنید.'; return; }
+  statusEl.textContent='در حال درخواست دسترسی به دوربین…';
+  try{
+    const formats=[Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E, Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.CODABAR];
+    html5Qr=new Html5Qrcode('scanner-el', {formatsToSupport:formats, verbose:false});
+    const qrboxFn=function(viewfinderWidth, viewfinderHeight){
+      const size=Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75);
+      return {width:size, height:Math.floor(size*0.55)};
+    };
+    html5Qr.start({facingMode:'environment'}, {fps:10, qrbox:qrboxFn}, (decodedText)=>{
+      const code=enDigits(decodedText).replace(/[^0-9]/g,'');
+      if(code){ searchInput.value=code; renderSearchResult(); stopScanner(); }
+    }, ()=>{}).then(()=>{ statusEl.textContent='بارکد را مقابل دوربین بگیرید.'; })
+      .catch((err)=>{
+        console.error('scanner start failed', err);
+        scanning=false; document.getElementById('open-scan-btn').textContent='▤';
+        if(err && err.name==='NotAllowedError'){
+          statusEl.textContent='دسترسی دوربین مسدوده. اگه این لینک رو از تلگرام/واتس‌اپ/اینستاگرام باز کردید، لازمه با کروم واقعی بازش کنید (⋮ ← Open in Browser) — مرورگر داخلی این اپ‌ها معمولاً دوربین رو مسدود می‌کنه.';
+        } else {
+          statusEl.textContent='دسترسی به دوربین ممکن نشد: '+(err&&err.message?err.message:String(err));
+        }
+      });
+  }catch(e){ console.error('scanner init failed', e); scanning=false; document.getElementById('open-scan-btn').textContent='▤'; statusEl.textContent='خطا در راه‌اندازی اسکنر: '+(e&&e.message?e.message:String(e)); }
+}
+function stopScanner(){
+  scanning=false; document.getElementById('open-scan-btn').textContent='▤'; document.getElementById('scanner-wrap').classList.remove('active');
+  if(html5Qr){ html5Qr.stop().then(()=>html5Qr.clear()).catch(()=>{}); html5Qr=null; }
+}
+
+/* ---------- RECORD FORM ---------- */
+document.querySelectorAll('#tx-type-tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    txType=btn.dataset.type;
+    document.querySelectorAll('#tx-type-tabs button').forEach(b=> b.classList.toggle('active', b===btn));
+    document.getElementById('tx-status').className='status-msg';
+    renderRecordForm();
+  });
+});
+function addressDatalistHtml(){
+  const addrs=new Set(Object.values(stockMap).map(s=>s.address));
+  return `<datalist id="addr-list-dl">${[...addrs].map(a=>`<option value="${esc(a)}">`).join('')}</datalist>`;
+}
+function renderRecordForm(){
+  const form=document.getElementById('tx-form');
+  const pf=prefill||{}; prefill=null;
+  let html=addressDatalistHtml();
+  if(txType==='IN'){
+    html+=`<label>کد کالا</label><input type="text" id="f-code" class="mono" inputmode="numeric" value="${esc(pf.code||'')}" placeholder="مثلاً 1234567890123">
+      <div class="hint" id="f-code-hint"></div>
+      <label>نام کالا (اختیاری — اگر کد شناخته‌شده باشد خودکار پر می‌شود)</label><input type="text" id="f-name" placeholder="برای شناسایی راحت‌تر">
+      <div class="field-row"><div><label>آدرس انبار</label><input type="text" id="f-address" list="addr-list-dl" value="${esc(pf.address||'')}" placeholder="مثلاً ردیف۲-قفسه۵-ط۳"></div>
+      <div><label>تعداد</label><input type="text" id="f-qty" class="mono" inputmode="numeric" placeholder="0"></div></div>
+      <label>توضیح (اختیاری)</label><input type="text" id="f-note" placeholder="مثلاً نام تأمین‌کننده یا شماره حواله">
+      <button type="submit" class="btn btn-in">ثبت ورود به انبار</button>`;
+  } else if(txType==='OUT'){
+    html+=`<label>کد کالا</label><input type="text" id="f-code" class="mono" inputmode="numeric" value="${esc(pf.code||'')}">
+      <div class="hint" id="f-code-hint"></div>
+      <label>آدرس مبدا</label><input type="text" id="f-address" list="addr-list-dl" value="${esc(pf.address||'')}">
+      <div class="field-row"><div><label>تعداد</label><input type="text" id="f-qty" class="mono" inputmode="numeric" placeholder="0"></div>
+      <div><label>مقصد خروج</label><select id="f-dest"><option value="شارژ فروشگاه">شارژ فروشگاه</option><option value="ترنسفر به شعبه">ترنسفر به شعبه دیگر</option><option value="سایر">سایر / مرجوعی به مرکز</option></select></div></div>
+      <label>توضیح (اختیاری — مثلاً نام شعبه مقصد)</label><input type="text" id="f-note" placeholder="مثلاً شعبه آفریقا">
+      <button type="submit" class="btn btn-out">ثبت خروج از انبار</button>`;
+  } else if(txType==='MOVE'){
+    html+=`<label>کد کالا</label><input type="text" id="f-code" class="mono" inputmode="numeric" value="${esc(pf.code||'')}">
+      <div class="hint" id="f-code-hint"></div>
+      <div class="field-row"><div><label>آدرس مبدا</label><input type="text" id="f-address" list="addr-list-dl" value="${esc(pf.address||'')}"></div>
+      <div><label>آدرس مقصد</label><input type="text" id="f-to-address" list="addr-list-dl"></div></div>
+      <label>تعداد</label><input type="text" id="f-qty" class="mono" inputmode="numeric" placeholder="0">
+      <button type="submit" class="btn btn-move">ثبت جابجایی داخلی</button>`;
+  } else if(txType==='ADJUST'){
+    html+=`<label>کد کالا</label><input type="text" id="f-code" class="mono" inputmode="numeric" value="${esc(pf.code||'')}">
+      <div class="hint" id="f-code-hint"></div>
+      <label>آدرس</label><input type="text" id="f-address" list="addr-list-dl" value="${esc(pf.address||'')}">
+      <label>تعداد صحیح (جایگزین مقدار فعلی)</label><input type="text" id="f-qty" class="mono" inputmode="numeric" placeholder="0">
+      <div class="hint">برای اصلاح موجودی پس از شمارش فیزیکی استفاده کنید.</div>
+      <label>توضیح (اختیاری)</label><input type="text" id="f-note" placeholder="دلیل اصلاح">
+      <button type="submit" class="btn btn-outline">ثبت اصلاح موجودی</button>`;
+  } else if(txType==='EXCEL'){
+    html=renderExcelPanelHtml();
+  }
+  form.innerHTML=html;
+  if(txType==='EXCEL'){ bindExcelPanel(); return; }
+  ['f-code','f-address','f-to-address','f-qty'].forEach(id=>{
+    const node=document.getElementById(id);
+    if(node) node.addEventListener('input', ()=>{ node.value=enDigits(node.value); });
+  });
+  const codeNode=document.getElementById('f-code');
+  if(codeNode){
+    const runLookup=()=>{
+      const code=codeNode.value.trim();
+      const known=code && productMap[code] ? productMap[code].name : '';
+      const nameNode=document.getElementById('f-name');
+      if(nameNode){ if(known && !nameNode.value.trim()) nameNode.value=known; }
+      const hintNode=document.getElementById('f-code-hint');
+      if(!hintNode) return;
+      if(txType==='OUT' || txType==='MOVE' || txType==='ADJUST'){
+        const matches=code ? Object.values(stockMap).filter(s=> s.code===code) : [];
+        const addrNode=document.getElementById('f-address');
+        if(matches.length===1){
+          if(addrNode && !addrNode.value.trim()) addrNode.value=matches[0].address;
+          hintNode.textContent=(known?('✓ '+known+' — '):'')+'موجودی '+fmtNum(matches[0].qty)+' در '+matches[0].address;
+        } else if(matches.length>1){
+          hintNode.textContent=(known?('✓ '+known+' — '):'')+'در '+fmtNum(matches.length)+' آدرس موجوده: '+matches.map(m=> m.address+' ('+fmtNum(m.qty)+')').join('، ');
+        } else if(code){
+          hintNode.textContent=(known?('✓ '+known+' — '):'')+'این کد در هیچ آدرسی موجود نیست';
+        } else {
+          hintNode.textContent='';
+        }
+      } else {
+        hintNode.textContent = known ? ('✓ '+known) : (code ? 'این کد شناخته‌شده نیست' : '');
+      }
+    };
+    codeNode.addEventListener('input', runLookup);
+    runLookup();
+  }
+  form.onsubmit=onSubmitTx;
+}
+async function onSubmitTx(e){
+  e.preventDefault();
+  if(!sb){ setTxStatus('اتصال به پایگاه داده برقرار نیست.', true); return; }
+  const code=(document.getElementById('f-code').value||'').trim();
+  const qty=parseInt(document.getElementById('f-qty').value||'0',10);
+  if(!code){ setTxStatus('کد کالا را وارد کنید.', true); return; }
+  if((!qty || qty<=0) && txType!=='ADJUST'){ setTxStatus('تعداد را درست وارد کنید.', true); return; }
+  try{
+    if(txType==='IN'){
+      const address=(document.getElementById('f-address').value||'').trim();
+      const name=(document.getElementById('f-name').value||'').trim();
+      const note=(document.getElementById('f-note').value||'').trim();
+      if(!address){ setTxStatus('آدرس را وارد کنید.', true); return; }
+      await applyStockDelta(code, address, qty, name);
+      if(name) await upsertProduct(code, name);
+      await appendLog({type:'IN', code, name: name||productName(code), to_address:address, qty, note});
+      setTxStatus('ورود به انبار با موفقیت ثبت شد.', false);
+    } else if(txType==='OUT'){
+      const address=(document.getElementById('f-address').value||'').trim();
+      const dest=document.getElementById('f-dest').value;
+      const note=(document.getElementById('f-note').value||'').trim();
+      if(!address){ setTxStatus('آدرس مبدا را وارد کنید.', true); return; }
+      await applyStockDelta(code, address, -qty, '');
+      await appendLog({type:'OUT', code, name: productName(code), from_address:address, qty, note: dest + (note?(' — '+note):'')});
+      setTxStatus('خروج از انبار ثبت شد.', false);
+    } else if(txType==='MOVE'){
+      const from=(document.getElementById('f-address').value||'').trim();
+      const to=(document.getElementById('f-to-address').value||'').trim();
+      if(!from || !to){ setTxStatus('آدرس مبدا و مقصد را وارد کنید.', true); return; }
+      if(from===to){ setTxStatus('آدرس مبدا و مقصد نباید یکسان باشند.', true); return; }
+      await applyStockDelta(code, from, -qty, '');
+      await applyStockDelta(code, to, qty, '');
+      await appendLog({type:'MOVE', code, name: productName(code), from_address:from, to_address:to, qty, note:''});
+      setTxStatus('جابجایی داخلی ثبت شد.', false);
+    } else if(txType==='ADJUST'){
+      const address=(document.getElementById('f-address').value||'').trim();
+      const note=(document.getElementById('f-note').value||'').trim();
+      if(!address){ setTxStatus('آدرس را وارد کنید.', true); return; }
+      const newQty=parseInt(document.getElementById('f-qty').value||'0',10) || 0;
+      const existing=Object.values(stockMap).find(s=> s.code===code && s.address===address);
+      const before=existing ? (existing.qty||0) : 0;
+      await setStockAbsolute(code, address, newQty);
+      await appendLog({type:'ADJUST', code, name: productName(code), to_address:address, qty:(newQty-before), note: note || ('از '+before+' به '+newQty)});
+      setTxStatus('اصلاح موجودی ثبت شد.', false);
+    }
+    document.getElementById('tx-form').reset(); renderRecordForm();
+  }catch(err){
+    if(err && err.message==='INSUFFICIENT'){ setTxStatus('موجودی کافی در این آدرس برای خروج/جابجایی وجود ندارد.', true); }
+    else{ console.error(err); setTxStatus('ثبت تراکنش با خطا مواجه شد.', true); }
+  }
+}
+function setTxStatus(msg, isErr){ const box=document.getElementById('tx-status'); box.textContent=msg; box.className='status-msg '+(isErr?'err':'ok'); }
+function productName(code){ return (productMap[code]&&productMap[code].name)||''; }
+
+/* ---------- data layer (Supabase) ---------- */
+async function applyStockDelta(code, address, delta, nameIfNew){
+  const existing=Object.values(stockMap).find(s=> s.code===code && s.address===address);
+  if(existing){
+    const newQty=(existing.qty||0)+delta;
+    if(newQty<0) throw new Error('INSUFFICIENT');
+    if(newQty===0){
+      const {error}=await sb.from('stock').delete().eq('id', existing.id); if(error) throw error;
+      delete stockMap[existing.id];
+    } else {
+      const {error}=await sb.from('stock').update({qty:newQty, updated_at:new Date().toISOString()}).eq('id', existing.id); if(error) throw error;
+      stockMap[existing.id]={...existing, qty:newQty};
+    }
+  } else {
+    if(delta<=0) throw new Error('INSUFFICIENT');
+    const {data,error}=await sb.from('stock').insert({code, name:nameIfNew||'', address, qty:delta}).select().single();
+    if(error) throw error;
+    if(data) stockMap[data.id]=data;
+  }
+}
+async function setStockAbsolute(code, address, qty){
+  const existing=Object.values(stockMap).find(s=> s.code===code && s.address===address);
+  if(qty<=0){ if(existing){ const {error}=await sb.from('stock').delete().eq('id', existing.id); if(error) throw error; delete stockMap[existing.id]; } return; }
+  if(existing){ const {error}=await sb.from('stock').update({qty, updated_at:new Date().toISOString()}).eq('id', existing.id); if(error) throw error; stockMap[existing.id]={...existing, qty}; }
+  else{ const {data,error}=await sb.from('stock').insert({code, name:'', address, qty}).select().single(); if(error) throw error; if(data) stockMap[data.id]=data; }
+}
+async function upsertProduct(code, name){
+  if(!name) return;
+  const {error}=await sb.from('products').upsert({code, name, updated_at:new Date().toISOString()}, {onConflict:'code'});
+  if(error) throw error;
+}
+async function appendLog(entry){
+  const {error}=await sb.from('logs').insert({
+    ts:new Date().toISOString(), type:entry.type, code:entry.code, name:entry.name||'',
+    from_address:entry.from_address||null, to_address:entry.to_address||null, qty:entry.qty, note:entry.note||''
+  });
+  if(error) throw error;
+}
+
+/* ---------- ADDRESSES ---------- */
+document.getElementById('addr-filter').addEventListener('input', renderAddresses);
+let addrSelection=new Set();
+let addrBulkMode=null;
+function renderAddresses(){
+  const box=document.getElementById('addr-list');
+  const q=enDigits((document.getElementById('addr-filter').value||'').trim().toLowerCase());
+  const byAddr={};
+  Object.values(stockMap).forEach(s=>{
+    if(q && !s.address.toLowerCase().includes(q) && !s.code.includes(q)) return;
+    (byAddr[s.address]=byAddr[s.address]||[]).push(s);
+  });
+  const addrs=Object.keys(byAddr).sort((a,b)=> a.localeCompare(b,'fa'));
+  if(addrs.length===0){ box.innerHTML=`<div class="empty-state"><p>آدرسی یافت نشد.</p></div>`; renderAddrBulkBar(); return; }
+  box.innerHTML=addrs.map(addr=>{
+    const items=byAddr[addr].sort((a,b)=> a.code.localeCompare(b.code));
+    const total=items.reduce((s,i)=> s+(i.qty||0),0);
+    const allSelected=items.every(it=> addrSelection.has(it.id));
+    return `<div class="group-header">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:400;">
+          <input type="checkbox" onchange="toggleAddrGroupSelect('${esc(addr)}', this.checked)" ${allSelected?'checked':''}>
+          <span class="addr mono">${esc(addr)}</span>
+        </label>
+        <span>${fmtNum(total)} عدد</span>
+      </div>`+
+      items.map(s=> `<div class="stock-row">
+          <label style="display:flex; align-items:flex-start; gap:9px; flex:1; cursor:pointer;">
+            <input type="checkbox" style="margin-top:2px; flex-shrink:0;" onchange="toggleAddrSelect('${s.id}', this.checked)" ${addrSelection.has(s.id)?'checked':''}>
+            <span><span class="mono-val" style="font-weight:600; display:block;">${esc(s.code)}</span><span class="name">${esc(s.name||productName(s.code))}</span></span>
+          </label>
+          <div class="qty">${fmtNum(s.qty)}</div>
+        </div>`).join('');
+  }).join('');
+  renderAddrBulkBar();
+}
+function toggleAddrSelect(id, checked){
+  if(checked) addrSelection.add(id); else addrSelection.delete(id);
+  renderAddrBulkBar();
+}
+function toggleAddrGroupSelect(addr, checked){
+  Object.values(stockMap).filter(s=> s.address===addr).forEach(s=>{
+    if(checked) addrSelection.add(s.id); else addrSelection.delete(s.id);
+  });
+  renderAddresses();
+}
+function clearAddrSelection(){ addrSelection.clear(); addrBulkMode=null; renderAddresses(); }
+function renderAddrBulkBar(){
+  const bar=document.getElementById('addr-bulk-bar');
+  if(!bar) return;
+  if(addrSelection.size===0){ bar.style.display='none'; bar.innerHTML=''; addrBulkMode=null; return; }
+  bar.style.display='block';
+  bar.innerHTML=`<div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:13px; font-weight:600;">${fmtNum(addrSelection.size)} مورد انتخاب شده</span>
+        <span class="link-btn" id="addr-clear-sel">لغو انتخاب</span>
+      </div>
+      <div id="addr-bulk-form"></div>
+      <div class="field-row">
+        <button type="button" class="btn btn-move btn-sm" style="width:100%;" id="addr-bulk-move-btn">جابجایی گروهی</button>
+        <button type="button" class="btn btn-out btn-sm" style="width:100%;" id="addr-bulk-out-btn">خروج گروهی</button>
+      </div>
+    </div>`;
+  document.getElementById('addr-clear-sel').addEventListener('click', clearAddrSelection);
+  document.getElementById('addr-bulk-move-btn').addEventListener('click', ()=> showAddrBulkForm('MOVE'));
+  document.getElementById('addr-bulk-out-btn').addEventListener('click', ()=> showAddrBulkForm('OUT'));
+  if(addrBulkMode) showAddrBulkForm(addrBulkMode);
+}
+function showAddrBulkForm(mode){
+  addrBulkMode=mode;
+  const box=document.getElementById('addr-bulk-form');
+  if(!box) return;
+  const addrOptions=[...new Set(Object.values(stockMap).map(s=>s.address))];
+  if(mode==='MOVE'){
+    box.innerHTML=`
+      <label>آدرس مقصد جدید</label>
+      <input type="text" id="bulk-to-address" list="addr-list-dl-bulk">
+      <datalist id="addr-list-dl-bulk">${addrOptions.map(a=>`<option value="${esc(a)}">`).join('')}</datalist>
+      <button type="button" class="btn btn-move" id="bulk-confirm-btn">تأیید جابجایی ${fmtNum(addrSelection.size)} مورد</button>
+      <div class="excel-progress" id="addr-bulk-progress"></div>`;
+  } else {
+    box.innerHTML=`
+      <label>مقصد خروج</label>
+      <select id="bulk-dest"><option value="شارژ فروشگاه">شارژ فروشگاه</option><option value="ترنسفر به شعبه">ترنسفر به شعبه دیگر</option><option value="سایر">سایر / اصلاح آدرس‌بندی</option></select>
+      <label>توضیح (اختیاری)</label>
+      <input type="text" id="bulk-note" placeholder="مثلاً دلیل خروج">
+      <button type="button" class="btn btn-out" id="bulk-confirm-btn">تأیید خروج ${fmtNum(addrSelection.size)} مورد</button>
+      <div class="excel-progress" id="addr-bulk-progress"></div>`;
+  }
+  document.getElementById('bulk-confirm-btn').addEventListener('click', confirmAddrBulk);
+}
+async function confirmAddrBulk(){
+  if(!sb || addrSelection.size===0) return;
+  const btn=document.getElementById('bulk-confirm-btn'); if(btn) btn.disabled=true;
+  const progress=document.getElementById('addr-bulk-progress');
+  const items=[...addrSelection].map(id=> stockMap[id]).filter(Boolean);
+  let done=0, failed=0;
+  if(addrBulkMode==='MOVE'){
+    const toAddr=(document.getElementById('bulk-to-address').value||'').trim();
+    if(!toAddr){ if(progress) progress.textContent='آدرس مقصد را وارد کنید.'; if(btn) btn.disabled=false; return; }
+    for(const item of items){
+      if(progress) progress.textContent='در حال جابجایی '+fmtNum(done+failed+1)+' از '+fmtNum(items.length)+'…';
+      if(item.address===toAddr){ done++; continue; }
+      try{
+        await applyStockDelta(item.code, item.address, -item.qty, '');
+        await applyStockDelta(item.code, toAddr, item.qty, item.name||'');
+        await appendLog({type:'MOVE', code:item.code, name:item.name||productName(item.code), from_address:item.address, to_address:toAddr, qty:item.qty, note:'جابجایی گروهی'});
+        done++;
+      }catch(err){ console.error(err); failed++; }
+    }
+  } else {
+    const dest=document.getElementById('bulk-dest').value;
+    const note=(document.getElementById('bulk-note').value||'').trim();
+    for(const item of items){
+      if(progress) progress.textContent='در حال خروج '+fmtNum(done+failed+1)+' از '+fmtNum(items.length)+'…';
+      try{
+        await applyStockDelta(item.code, item.address, -item.qty, '');
+        await appendLog({type:'OUT', code:item.code, name:item.name||productName(item.code), from_address:item.address, qty:item.qty, note: dest+(note?(' — '+note):'')+' — خروج گروهی'});
+        done++;
+      }catch(err){ console.error(err); failed++; }
+    }
+  }
+  if(progress) progress.textContent='انجام شد — '+fmtNum(done)+' مورد ثبت شد'+(failed?('، '+fmtNum(failed)+' مورد با خطا مواجه شد'):'')+'.';
+  addrSelection.clear(); addrBulkMode=null;
+  setTimeout(()=>{ renderAddresses(); }, 1200);
+}
+
+/* ---------- HISTORY ---------- */
+let histTypeFilter='ALL';
+document.getElementById('hist-filter').addEventListener('input', renderHistory);
+document.getElementById('hist-from-date').addEventListener('input', (e)=>{ e.target.value=enDigits(e.target.value); renderHistory(); });
+document.getElementById('hist-to-date').addEventListener('input', (e)=>{ e.target.value=enDigits(e.target.value); renderHistory(); });
+document.querySelectorAll('#hist-type-filter button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    histTypeFilter=btn.dataset.type;
+    document.querySelectorAll('#hist-type-filter button').forEach(b=> b.classList.toggle('active', b===btn));
+    renderHistory();
+  });
+});
+function txDerive(t){
+  const typeLabel={IN:'ورود', OUT:'خروج', MOVE:'جابجایی', ADJUST:'اصلاح'}[t.type]||t.type;
+  const badgeClass={IN:'in', OUT:'out', MOVE:'move', ADJUST:'edit'}[t.type]||'';
+  const sign=t.type==='IN' ? '+' : (t.type==='OUT' ? '−' : '');
+  const qtyColor=t.type==='IN' ? 'var(--in)' : (t.type==='OUT' ? 'var(--out)' : 'var(--ink)');
+  let addrCell;
+  if(t.type==='MOVE') addrCell = esc(t.from_address)+' ← '+esc(t.to_address);
+  else if(t.from_address) addrCell = esc(t.from_address) + (t.note ? (' - '+esc(t.note)) : '');
+  else if(t.to_address) addrCell = esc(t.to_address);
+  else addrCell='—';
+  return {typeLabel, badgeClass, sign, qtyColor, addrCell};
+}
+function txRowHtml(t){
+  const {typeLabel, badgeClass, sign, qtyColor, addrCell}=txDerive(t);
+  return `<tr>
+    <td class="mono-val">${esc(t.code)}</td>
+    <td>${esc(t.name||'—')}</td>
+    <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
+    <td style="color:${qtyColor}; font-family:var(--font-mono); direction:ltr;">${sign}${fmtNum(Math.abs(t.qty||0))}</td>
+    <td class="mono-val">${addrCell}</td>
+    <td>${fmtDateTime(t.ts)}</td>
+  </tr>`;
+}
+function txCardHtml(t){
+  const {typeLabel, badgeClass, sign, qtyColor, addrCell}=txDerive(t);
+  return `<div class="tx-card">
+    <div class="tx-card-top">
+      <span class="mono-val" style="font-weight:600;">${esc(t.code)}</span>
+      <span class="badge ${badgeClass}">${typeLabel}</span>
+    </div>
+    <div class="tx-card-mid">
+      <span class="tx-card-name">${esc(t.name||'—')}</span>
+      <span class="tx-card-qty" style="color:${qtyColor};">${sign}${fmtNum(Math.abs(t.qty||0))}</span>
+    </div>
+    <div class="tx-card-bottom">
+      <span class="mono-val">${addrCell}</span>
+      <span>${fmtDateTime(t.ts)}</span>
+    </div>
+  </div>`;
+}
+function renderHistory(){
+  const box=document.getElementById('hist-list');
+  const cardBox=document.getElementById('hist-list-cards');
+  const q=enDigits((document.getElementById('hist-filter').value||'').trim().toLowerCase());
+  const fromTs=parseJalaliDateInput(document.getElementById('hist-from-date').value, false);
+  const toTs=parseJalaliDateInput(document.getElementById('hist-to-date').value, true);
+  let entries=logEntries;
+  if(histTypeFilter!=='ALL') entries=entries.filter(t=> t.type===histTypeFilter);
+  if(q) entries=entries.filter(t=> (t.code||'').includes(q) || (t.from_address||'').toLowerCase().includes(q) || (t.to_address||'').toLowerCase().includes(q) || (t.name||'').toLowerCase().includes(q));
+  if(fromTs!=null) entries=entries.filter(t=> new Date(t.ts).getTime()>=fromTs);
+  if(toTs!=null) entries=entries.filter(t=> new Date(t.ts).getTime()<=toTs);
+  if(entries.length===0){
+    const emptyHtml=`<div class="empty-state"><p>تراکنشی یافت نشد.</p></div>`;
+    box.innerHTML=`<tr><td colspan="6">${emptyHtml}</td></tr>`;
+    if(cardBox) cardBox.innerHTML=emptyHtml;
+    renderHistLoadMore(); return;
+  }
+  box.innerHTML=entries.map(txRowHtml).join('');
+  if(cardBox) cardBox.innerHTML=entries.map(txCardHtml).join('');
+  renderHistLoadMore();
+}
+let logsLoading=false;
+function renderHistLoadMore(){
+  const holder=document.getElementById('hist-load-more');
+  if(!holder) return;
+  if(!logsHasMore){ holder.innerHTML=''; return; }
+  holder.innerHTML=`<button type="button" class="btn btn-outline" id="load-more-btn">بارگذاری تراکنش‌های قدیمی‌تر</button>`;
+  const btn=document.getElementById('load-more-btn');
+  if(btn) btn.addEventListener('click', loadMoreHistory);
+}
+async function loadMoreHistory(){
+  if(logsLoading) return;
+  logsLoading=true;
+  const btn=document.getElementById('load-more-btn');
+  if(btn){ btn.disabled=true; btn.textContent='در حال بارگذاری…'; }
+  logsLimit+=300;
+  await loadAll();
+  logsLoading=false;
+}
+
+/* ---------- EXCEL PANEL (daily sales matching + bulk IN/OUT) ---------- */
+let excelMode='SALES'; // 'SALES' | 'BULKIN' | 'NOTSHOW' | 'TITLES'
+let excelRows=[];       // parsed + matched rows
+let excelBusy=false;
+let notShowResults=[];  // [{code,name,matches:[{address,qty}]}]
+
+function renderExcelPanelHtml(){
+  return `
+    <div class="mode-tabs" id="excel-mode-tabs">
+      <button type="button" data-mode="SALES" class="${excelMode==='SALES'?'active':''}">فروش روزانه (تطبیق خودکار آدرس)</button>
+      <button type="button" data-mode="BULKIN" class="${excelMode==='BULKIN'?'active':''}">ورود / خروج انبوه</button>
+      <button type="button" data-mode="NOTSHOW" class="${excelMode==='NOTSHOW'?'active':''}">نات‌شو (کالاهای داخل انبار)</button>
+      <button type="button" data-mode="TITLES" class="${excelMode==='TITLES'?'active':''}">بروزرسانی عنوان کالاها</button>
+    </div>
+    ${excelMode==='SALES' ? `
+      <div class="upload-box">
+        <p>فایل اکسل فروش روزانه رو انتخاب کنید — ستون‌های «کد» و «مقدار فروش خالص» به‌صورت خودکار خونده می‌شن. برنامه محل هر کالا رو تو انبار پیدا می‌کنه و بعد از تأیید شما، از موجودی کم می‌کنه.</p>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls">
+      </div>` : excelMode==='BULKIN' ? `
+      <div class="upload-box">
+        <p>فایل اکسل با ستون‌های: کد کالا، نام کالا (اختیاری)، آدرس، تعداد، نوع (ورود یا خروج) رو انتخاب کنید.</p>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls">
+      </div>
+      <span class="tpl-link" id="download-template-link">دانلود قالب خالی اکسل</span>` : excelMode==='NOTSHOW' ? `
+      <div class="upload-box">
+        <p>اکسل کل موجودی‌تون (شامل فروشگاه + انبار) رو با ستون‌های عنوان، کد و تعداد آپلود کنید. فقط بارکدهایی نشون داده می‌شن که کل تعدادشون تو انبار باشه — یعنی هنوز حتی یکی‌شون به فروشگاه شارژ نشده. اگه بخشی از موجودی یه بارکد تو انبار و بخشی تو فروشگاه باشه، نشون داده نمی‌شه. هیچ موجودی‌ای تغییر نمی‌کنه، فقط یه گزارشه.</p>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls">
+      </div>` : `
+      <div class="upload-box">
+        <p>فایلی با یک ستون کد کالا و یک ستون عنوان انتخاب کنید (اسم ستون‌ها فرقی نداره — کد/Barcode و عنوان/نام/Description همه شناسایی می‌شن). این کار فقط اسم کالاها رو به‌روز می‌کنه و هیچ اثری روی موجودی انبار نداره.</p>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls">
+      </div>`}
+    <div id="excel-preview"></div>
+    <div id="excel-actions"></div>
+  `;
+}
+function bindExcelPanel(){
+  document.querySelectorAll('#excel-mode-tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      excelMode=btn.dataset.mode; excelRows=[]; notShowResults=[];
+      renderRecordForm();
+    });
+  });
+  const fileInput=document.getElementById('excel-file-input');
+  if(fileInput) fileInput.addEventListener('change', handleExcelFile);
+  const tplLink=document.getElementById('download-template-link');
+  if(tplLink) tplLink.addEventListener('click', downloadBulkTemplate);
+}
+function downloadBulkTemplate(){
+  const data=[
+    ['کد کالا','نام کالا','آدرس','تعداد','نوع'],
+    ['1234567890123','نام نمونه کالا','ردیف۱-قفسه۲','10','ورود']
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:16},{wch:26},{wch:18},{wch:8},{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'قالب');
+  XLSX.writeFile(wb, 'قالب-ورود-خروج-انبوه.xlsx');
+}
+function cellToCode(v){
+  if(v==null) return '';
+  let s=enDigits(String(v).trim());
+  s=s.replace(/\.0+$/,'');
+  return s.replace(/[^0-9]/g,'');
+}
+function cellToQty(v){
+  if(v==null) return 0;
+  const s=enDigits(String(v).trim()).replace(/[^0-9.\-]/g,'');
+  const n=parseInt(s,10);
+  return isNaN(n)?0:n;
+}
+function findCol(headers, keywords){
+  for(let i=0;i<headers.length;i++){
+    const h=String(headers[i]||'').trim();
+    if(keywords.some(k=> h.includes(k))) return i;
+  }
+  return -1;
+}
+function handleExcelFile(e){
+  const file=e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    try{
+      const wb=XLSX.read(ev.target.result, {type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const aoa=XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+      if(excelMode==='SALES') parseSalesRows(aoa); else if(excelMode==='BULKIN') parseBulkRows(aoa); else if(excelMode==='NOTSHOW') parseNotShowRows(aoa); else parseTitlesRows(aoa);
+    }catch(err){
+      console.error(err);
+      document.getElementById('excel-preview').innerHTML=`<div class="empty-state"><p>خواندن فایل با خطا مواجه شد. مطمئن شوید فایل اکسل معتبر است.</p></div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function parseSalesRows(aoa){
+  if(!aoa.length){ excelRows=[]; renderExcelPreview(); return; }
+  const headers=aoa[0];
+  const codeCol=findCol(headers,['کد']);
+  const qtyCol=findCol(headers,['فروش','تعداد','مقدار']);
+  const titleCol=findCol(headers,['عنوان','نام']);
+  if(codeCol===-1 || qtyCol===-1){
+    document.getElementById('excel-preview').innerHTML=`<div class="empty-state"><p>ستون «کد» یا «تعداد/مقدار فروش» در فایل پیدا نشد. لطفاً فرمت فایل خروجی حسابداری را بررسی کنید.</p></div>`;
+    return;
+  }
+  excelRows=[];
+  for(let r=1;r<aoa.length;r++){
+    const row=aoa[r];
+    if(!row || row.every(c=> c===''||c==null)) continue;
+    const code=cellToCode(row[codeCol]);
+    const qty=cellToQty(row[qtyCol]);
+    const title=titleCol>-1 ? String(row[titleCol]||'').trim() : '';
+    if(!code || qty<=0) continue;
+    const matches=Object.values(stockMap).filter(s=> s.code===code);
+    let status, chosenAddress=null, note='';
+    if(matches.length===0){ status='warn'; note='این کد در هیچ آدرسی از انبار موجود نیست.'; }
+    else if(matches.length===1){
+      chosenAddress=matches[0].address;
+      if(matches[0].qty<qty){ status='warn'; note='موجودی این آدرس ('+fmtNum(matches[0].qty)+') کمتر از تعداد فروش‌رفته است.'; }
+      else{ status='ok'; note='از آدرس '+matches[0].address+' کم می‌شود.'; }
+    } else {
+      status='multi'; note='این کد در چند آدرس موجود است — یکی را انتخاب کنید.';
+    }
+    excelRows.push({code, title, name: productName(code)||title, qty, direction:'OUT', matches, chosenAddress, status, note, include: status!=='warn'});
+  }
+  renderExcelPreview();
+}
+function parseBulkRows(aoa){
+  if(!aoa.length){ excelRows=[]; renderExcelPreview(); return; }
+  const headers=aoa[0];
+  const codeCol=findCol(headers,['کد']);
+  const nameCol=findCol(headers,['نام']);
+  const addrCol=findCol(headers,['آدرس']);
+  const qtyCol=findCol(headers,['تعداد','مقدار']);
+  const typeCol=findCol(headers,['نوع']);
+  if(codeCol===-1 || addrCol===-1 || qtyCol===-1){
+    document.getElementById('excel-preview').innerHTML=`<div class="empty-state"><p>ستون‌های کد کالا، آدرس یا تعداد در فایل پیدا نشد. از قالب دانلودی استفاده کنید.</p></div>`;
+    return;
+  }
+  excelRows=[];
+  for(let r=1;r<aoa.length;r++){
+    const row=aoa[r];
+    if(!row || row.every(c=> c===''||c==null)) continue;
+    const code=cellToCode(row[codeCol]);
+    const name=nameCol>-1 ? String(row[nameCol]||'').trim() : '';
+    const address=String(row[addrCol]||'').trim();
+    const qty=cellToQty(row[qtyCol]);
+    const typeRaw=typeCol>-1 ? String(row[typeCol]||'').trim() : '';
+    const direction = typeRaw.includes('خروج') ? 'OUT' : 'IN';
+    if(!code || !address || qty<=0) continue;
+    let status='ok', note = direction==='IN' ? ('به آدرس '+address+' اضافه می‌شود.') : ('از آدرس '+address+' کم می‌شود.');
+    if(direction==='OUT'){
+      const existing=Object.values(stockMap).find(s=> s.code===code && s.address===address);
+      const have=existing?existing.qty:0;
+      if(have<qty){ status='warn'; note='موجودی این آدرس ('+fmtNum(have)+') کافی نیست.'; }
+    }
+    excelRows.push({code, title:name, name: name||productName(code), qty, direction, matches:[{address}], chosenAddress:address, status, note, include: status!=='warn'});
+  }
+  renderExcelPreview();
+}
+function renderExcelPreview(){
+  const box=document.getElementById('excel-preview');
+  const actions=document.getElementById('excel-actions');
+  if(excelRows.length===0){ box.innerHTML=''; actions.innerHTML=''; return; }
+  const statusPriority={ok:0, multi:1, warn:2};
+  const order=excelRows.map((r,i)=>i).sort((ia,ib)=>{
+    const pa=statusPriority[excelRows[ia].status]!==undefined?statusPriority[excelRows[ia].status]:3;
+    const pb=statusPriority[excelRows[ib].status]!==undefined?statusPriority[excelRows[ib].status]:3;
+    return pa-pb;
+  });
+  box.innerHTML=order.map((i)=>{
+    const r=excelRows[i];
+    const cls = !r.include ? 'status-excluded' : (r.status==='warn' ? 'status-warn' : (r.status==='multi' && !r.chosenAddress ? 'status-warn' : 'status-ok'));
+    let addrControl='';
+    if(r.status==='multi'){
+      addrControl=`<div class="er-row2">
+        <select onchange="setExcelRowAddress(${i}, this.value)">
+          <option value="">— انتخاب آدرس —</option>
+          ${r.matches.map(m=> `<option value="${esc(m.address)}" ${r.chosenAddress===m.address?'selected':''}>${esc(m.address)} (موجودی ${fmtNum(m.qty)})</option>`).join('')}
+        </select>
+      </div>`;
+    }
+    return `<div class="excel-row ${cls}">
+      <div class="er-top">
+        <div><div class="er-code">${esc(r.code)}</div><div class="er-name">${esc(r.name||'بدون نام')}</div></div>
+        <div class="er-qty">${r.direction==='IN'?'+':'−'}${fmtNum(r.qty)}</div>
+      </div>
+      ${addrControl}
+      <div class="er-note ${r.status==='ok'?'ok':''}">${esc(r.note)}</div>
+      <div class="er-row2">
+        <label class="chk"><input type="checkbox" ${r.include?'checked':''} onchange="toggleExcelRow(${i}, this.checked)"> ثبت شود</label>
+      </div>
+    </div>`;
+  }).join('');
+  const okCount=excelRows.filter(r=> r.include && r.chosenAddress).length;
+  const skipCount=excelRows.length-okCount;
+  actions.innerHTML=`
+    <div class="excel-summary">${fmtNum(excelRows.length)} ردیف خوانده شد — ${fmtNum(okCount)} مورد آماده ثبت، ${fmtNum(skipCount)} مورد نیاز به بررسی یا رد شده.</div>
+    <button type="button" class="btn btn-out" id="excel-confirm-btn" ${okCount===0?'disabled':''}>ثبت ${fmtNum(okCount)} مورد تأییدشده</button>
+    <div class="excel-progress" id="excel-progress"></div>
+  `;
+  const btn=document.getElementById('excel-confirm-btn');
+  if(btn) btn.addEventListener('click', confirmExcelBatch);
+}
+function toggleExcelRow(i, checked){ excelRows[i].include=checked; renderExcelPreview(); }
+function setExcelRowAddress(i, address){
+  excelRows[i].chosenAddress=address||null;
+  if(address){
+    const m=excelRows[i].matches.find(m=> m.address===address);
+    if(m && m.qty<excelRows[i].qty){ excelRows[i].status='warn'; excelRows[i].note='موجودی این آدرس ('+fmtNum(m.qty)+') کمتر از تعداد لازم است.'; excelRows[i].include=false; }
+    else { excelRows[i].status='multi'; excelRows[i].note='از آدرس '+address+' کم می‌شود.'; excelRows[i].include=true; }
+  } else {
+    excelRows[i].status='multi';
+    excelRows[i].note='این کد در چند آدرس موجود است — یکی را انتخاب کنید.';
+  }
+  renderExcelPreview();
+}
+async function confirmExcelBatch(){
+  if(excelBusy || !sb) return;
+  excelBusy=true;
+  const btn=document.getElementById('excel-confirm-btn'); if(btn) btn.disabled=true;
+  const progress=document.getElementById('excel-progress');
+  const todo=excelRows.filter(r=> r.include && r.chosenAddress);
+  let done=0, failed=0;
+  for(const r of todo){
+    if(progress) progress.textContent='در حال ثبت '+fmtNum(done+failed+1)+' از '+fmtNum(todo.length)+'…';
+    try{
+      const delta = r.direction==='IN' ? r.qty : -r.qty;
+      await applyStockDelta(r.code, r.chosenAddress, delta, r.name||'');
+      if(r.name) await upsertProduct(r.code, r.name);
+      await appendLog({
+        type:r.direction, code:r.code, name: r.name||productName(r.code),
+        from_address: r.direction==='OUT' ? r.chosenAddress : null,
+        to_address: r.direction==='IN' ? r.chosenAddress : null,
+        qty:r.qty,
+        note: excelMode==='SALES' ? 'فروش روزانه (اکسل)' : 'ورود/خروج انبوه (اکسل)'
+      });
+      done++;
+    }catch(err){ console.error(err); failed++; }
+  }
+  excelBusy=false;
+  if(progress) progress.textContent = 'انجام شد — '+fmtNum(done)+' مورد ثبت شد'+(failed?('، '+fmtNum(failed)+' مورد با خطا مواجه شد'):'')+'.';
+  excelRows=[];
+  setTimeout(()=>{ if(currentView==='record') renderRecordForm(); }, 1200);
+}
+
+/* ---------- EXCEL PANEL: نات‌شو (warehouse-vs-total-inventory check) ---------- */
+function parseNotShowRows(aoa){
+  if(!aoa.length){ notShowResults=[]; renderNotShowPreview(); return; }
+  const headers=aoa[0];
+  const codeCol=findCol(headers,['کد','Barcode','barcode','Code','code']);
+  const qtyCol=findCol(headers,['موجودی','تعداد','مقدار']);
+  if(codeCol===-1 || qtyCol===-1){
+    document.getElementById('excel-preview').innerHTML=`<div class="empty-state"><p>ستون «کد» یا «تعداد/موجودی» در فایل پیدا نشد.</p></div>`;
+    return;
+  }
+  const uploadedTotals={};
+  for(let r=1;r<aoa.length;r++){
+    const row=aoa[r];
+    if(!row || row.every(c=> c===''||c==null)) continue;
+    const code=cellToCode(row[codeCol]);
+    const qty=cellToQty(row[qtyCol]);
+    if(!code) continue;
+    uploadedTotals[code]=(uploadedTotals[code]||0)+qty;
+  }
+  notShowResults=[];
+  Object.keys(uploadedTotals).forEach(code=>{
+    const totalQty=uploadedTotals[code];
+    if(totalQty<=0) return;
+    const matches=Object.values(stockMap).filter(s=> s.code===code).sort((a,b)=> a.address.localeCompare(b.address));
+    const warehouseQty=matches.reduce((s,m)=> s+(m.qty||0), 0);
+    if(warehouseQty>0 && warehouseQty>=totalQty){
+      notShowResults.push({code, name: productName(code), matches, totalQty, warehouseQty});
+    }
+  });
+  notShowResults.sort((a,b)=> a.code.localeCompare(b.code));
+  renderNotShowPreview();
+}
+function renderNotShowPreview(){
+  const box=document.getElementById('excel-preview');
+  const actions=document.getElementById('excel-actions');
+  if(notShowResults.length===0){
+    box.innerHTML=`<div class="empty-state"><p>فایلی هنوز پردازش نشده یا هیچ بارکدی نیست که کل موجودیش تو انبار باشه — یعنی طبق داده‌ها، همه یا بخشی از هر کالا احتمالاً تو فروشگاه هست.</p></div>`;
+    actions.innerHTML='';
+    return;
+  }
+  box.innerHTML=`<div class="card">
+    <div class="group-header"><span>کالاهایی که هنوز در انبارن (نات‌شو)</span><span>${fmtNum(notShowResults.length)} کد</span></div>
+    ${notShowResults.map(item=>{
+      return `<div style="margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--line);">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:2px;">
+          <span class="mono-val" style="font-weight:700;">${esc(item.code)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${esc(item.name||'بدون نام')}</span>
+        </div>
+        <div style="font-size:11.5px; color:var(--ink-faint); margin-bottom:4px;">کل موجودی طبق فایل: ${fmtNum(item.totalQty)} · موجودی انبار: ${fmtNum(item.warehouseQty)}</div>
+        ${item.matches.map(m=> `<div class="stock-row" style="padding:6px 0;"><div class="addr">${esc(m.address)}</div><div class="qty">${fmtNum(m.qty)}</div></div>`).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+  actions.innerHTML=`<button type="button" class="btn btn-outline" id="notshow-export-btn">خروجی Excel از این لیست</button>`;
+  const btn=document.getElementById('notshow-export-btn');
+  if(btn) btn.addEventListener('click', exportNotShow);
+}
+function exportNotShow(){
+  const rows=[['کد کالا','نام کالا','کل موجودی طبق فایل','موجودی انبار','آدرس انبار','تعداد این آدرس']];
+  notShowResults.forEach(item=>{
+    item.matches.forEach(m=> rows.push([item.code, item.name||'', item.totalQty, item.warehouseQty, m.address, m.qty]));
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:30},{wch:14},{wch:12},{wch:18},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'نات شو');
+  XLSX.writeFile(wb, 'نات-شو.xlsx');
+}
+
+/* ---------- EXCEL PANEL: bulk product-title update ---------- */
+let titleRows=[]; // {code,title}
+function parseTitlesRows(aoa){
+  if(!aoa.length){ titleRows=[]; renderTitlesPreview(); return; }
+  const headers=aoa[0];
+  const codeCol=findCol(headers,['کد','Barcode','barcode','Code','code']);
+  const titleCol=findCol(headers,['عنوان','نام','Description','Describtion','description','Title','title']);
+  if(codeCol===-1 || titleCol===-1){
+    document.getElementById('excel-preview').innerHTML=`<div class="empty-state"><p>ستون کد یا عنوان در فایل پیدا نشد.</p></div>`;
+    return;
+  }
+  titleRows=[];
+  const seen={};
+  for(let r=1;r<aoa.length;r++){
+    const row=aoa[r];
+    if(!row || row.every(c=> c===''||c==null)) continue;
+    const code=cellToCode(row[codeCol]);
+    const title=String(row[titleCol]||'').trim();
+    if(!code || !title) continue;
+    seen[code]=title;
+  }
+  titleRows=Object.keys(seen).map(code=> ({code, title:seen[code]}));
+  renderTitlesPreview();
+}
+function renderTitlesPreview(){
+  const box=document.getElementById('excel-preview');
+  const actions=document.getElementById('excel-actions');
+  if(titleRows.length===0){ box.innerHTML=''; actions.innerHTML=''; return; }
+  let newCount=0, updateCount=0, sameCount=0;
+  titleRows.forEach(r=>{
+    const existing=productMap[r.code];
+    if(!existing) newCount++;
+    else if(existing.name!==r.title) updateCount++;
+    else sameCount++;
+  });
+  box.innerHTML=`<div class="card">
+    <div class="group-header"><span>نتیجه بررسی فایل</span><span>${fmtNum(titleRows.length)} کد</span></div>
+    <div class="stock-row"><div>کد جدید (اضافه می‌شود)</div><div class="qty">${fmtNum(newCount)}</div></div>
+    <div class="stock-row"><div>عنوان تغییر می‌کند</div><div class="qty">${fmtNum(updateCount)}</div></div>
+    <div class="stock-row"><div>بدون تغییر</div><div class="qty">${fmtNum(sameCount)}</div></div>
+  </div>
+  <div class="hint">این عملیات فقط دیکشنری نام کالاها رو به‌روز می‌کنه؛ موجودی هیچ آدرسی تغییر نمی‌کند.</div>`;
+  actions.innerHTML=`
+    <button type="button" class="btn btn-primary" id="titles-confirm-btn">ثبت ${fmtNum(titleRows.length)} عنوان</button>
+    <div class="excel-progress" id="excel-progress"></div>
+  `;
+  const btn=document.getElementById('titles-confirm-btn');
+  if(btn) btn.addEventListener('click', confirmTitlesBatch);
+}
+async function confirmTitlesBatch(){
+  if(excelBusy || !sb || titleRows.length===0) return;
+  excelBusy=true;
+  const btn=document.getElementById('titles-confirm-btn'); if(btn) btn.disabled=true;
+  const progress=document.getElementById('excel-progress');
+  const CHUNK=500;
+  const total=titleRows.length;
+  let done=0, failedChunks=0;
+  for(let i=0;i<total;i+=CHUNK){
+    const chunk=titleRows.slice(i, i+CHUNK);
+    if(progress) progress.textContent='در حال ثبت '+fmtNum(Math.min(i+CHUNK,total))+' از '+fmtNum(total)+'…';
+    try{
+      const payload=chunk.map(r=> ({code:r.code, name:r.title, updated_at:new Date().toISOString()}));
+      const {error}=await sb.from('products').upsert(payload, {onConflict:'code'});
+      if(error) throw error;
+      chunk.forEach(r=>{ productMap[r.code]={code:r.code, name:r.title}; });
+      done+=chunk.length;
+    }catch(err){ console.error(err); failedChunks++; }
+  }
+  excelBusy=false;
+  if(progress) progress.textContent='انجام شد — '+fmtNum(done)+' عنوان ثبت شد'+(failedChunks?('، '+fmtNum(failedChunks)+' دسته با خطا مواجه شد'):'')+'.';
+  titleRows=[];
+  setTimeout(()=>{ if(currentView==='record') renderRecordForm(); }, 1400);
+}
+
+boot();
+</script>
+</body>
+</html>
