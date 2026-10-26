@@ -1085,16 +1085,36 @@ document.querySelectorAll('.signout-link').forEach(el=> el.addEventListener('cli
 
 /* ---------- data load + realtime ---------- */
 async function fetchAllRows(table, branchId){
-  let all=[], from=0; const PAGE=1000;
-  while(true){
-    let q=sb.from(table).select('*').range(from, from+PAGE-1);
+  // Each page is retried (a single dropped request used to fail the whole load), and the pages after
+  // the first are fetched in parallel (max 4 at once) instead of one-by-one, so a 9-page catalog no
+  // longer costs 9 sequential round-trips through the proxy. A stable order keeps paging consistent.
+  const PAGE=1000, orderCol=(table==='products')?'code':'id';
+  const fetchPage=(from, withCount)=> callWithRetry(async()=>{
+    let q=sb.from(table).select('*', withCount?{count:'exact'}:{}).order(orderCol).range(from, from+PAGE-1);
     if(branchId) q=q.eq('branch_id', branchId);
-    const {data,error}=await q;
+    const {data,error,count}=await q;
     if(error) throw error;
-    all=all.concat(data||[]);
-    if(!data || data.length<PAGE) break;
-    from+=PAGE;
+    return {data:data||[], count};
+  }, 2, 800);
+  const first=await fetchPage(0, true);
+  let all=first.data;
+  if(first.data.length<PAGE) return all;
+  if(first.count==null){
+    let from=PAGE;
+    while(true){
+      const r=await fetchPage(from,false);
+      all=all.concat(r.data);
+      if(r.data.length<PAGE) break;
+      from+=PAGE;
+    }
+    return all;
   }
+  const starts=[]; for(let f=PAGE; f<first.count; f+=PAGE) starts.push(f);
+  const results=new Array(starts.length);
+  let next=0;
+  const worker=async()=>{ while(next<starts.length){ const i=next++; results[i]=(await fetchPage(starts[i],false)).data; } };
+  await Promise.all(Array.from({length:Math.min(4,starts.length)}, worker));
+  results.forEach(r=>{ all=all.concat(r); });
   return all;
 }
 // Fixed, non-growing: feeds ONLY the Home "فعالیت اخیر" preview (top 6 rows) inside loadAll().
@@ -1133,9 +1153,17 @@ async function loadAllRun(seq){
     productMap={}; p.forEach(r=> productMap[r.code]=r);
     logEntries=l.data||[];
     document.body.classList.remove('loading-data');
+    const bn=document.getElementById('db-banner'); if(bn) bn.style.display='none';
     renderAll();
     return true;
-  }catch(e){ console.error('loadAll failed', e); return false; }
+  }catch(e){
+    console.error('loadAll failed', e);
+    if(seq===loadAllSeq){
+      const bn=document.getElementById('db-banner');
+      if(bn){ bn.textContent='بارگذاری موجودی ناموفق بود (اینترنت کند یا قطع است). چند لحظه بعد صفحه را رفرش کنید.'; bn.style.display='block'; }
+    }
+    return false;
+  }
 }
 let productsChannel=null;   // shared/global catalog — subscribed once, never recreated on branch switch
 let branchChannel=null;     // stock+logs for currentBranchId only — recreated on every branch switch
