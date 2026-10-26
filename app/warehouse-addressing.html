@@ -7,11 +7,12 @@
 <link rel="icon" type="image/png" href="/Trace/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.3/dist/iife/reader/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.3/dist/iife/reader/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --paper:#16181d; --surface:#23262d; --surface-2:#1c1f26; --surface-hover:#2a2e36;
@@ -1084,13 +1085,13 @@ document.getElementById('toggle-signup-link').addEventListener('click', ()=> set
 document.querySelectorAll('.signout-link').forEach(el=> el.addEventListener('click', async ()=>{ if(sb) await sb.auth.signOut(); }));
 
 /* ---------- data load + realtime ---------- */
-async function fetchAllRows(table, branchId){
+async function fetchAllRows(table, branchId, cols){
   // Each page is retried (a single dropped request used to fail the whole load), and the pages after
   // the first are fetched in parallel (max 4 at once) instead of one-by-one, so a 9-page catalog no
   // longer costs 9 sequential round-trips through the proxy. A stable order keeps paging consistent.
   const PAGE=1000, orderCol=(table==='products')?'code':'id';
   const fetchPage=(from, withCount)=> callWithRetry(async()=>{
-    let q=sb.from(table).select('*', withCount?{count:'exact'}:{}).order(orderCol).range(from, from+PAGE-1);
+    let q=sb.from(table).select(cols||'*', withCount?{count:'exact'}:{}).order(orderCol).range(from, from+PAGE-1);
     if(branchId) q=q.eq('branch_id', branchId);
     const {data,error,count}=await q;
     if(error) throw error;
@@ -1145,7 +1146,7 @@ async function loadAllRun(seq){
   try{
     const [s,p,l]=await Promise.all([
       fetchAllRows('stock', currentBranchId),
-      fetchAllRows('products'),
+      fetchAllRows('products', null, 'code,name'),
       sb.from('logs').select('*').eq('branch_id', currentBranchId).order('ts',{ascending:false}).limit(HOME_RECENT_LOGS_LIMIT)
     ]);
     if(seq!==loadAllSeq) return loadAllLatest; // superseded by a newer loadAll — never write stale data
